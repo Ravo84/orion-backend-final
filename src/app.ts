@@ -1,28 +1,32 @@
+// Final attempt to fix Render build
+// FIX: Use namespace imports for CommonJS modules like express and helmet
+
 import cors from "cors";
-import express from "express";
+import express, { Application, Request, Response, NextFunction } from "express"; // Import Application, Request, Response, NextFunction types
 import helmet from "helmet";
 import morgan from "morgan";
 
-import { env } from "./config/env.js"; // FIX 1: Relative path and .js extension
-import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js"; // FIX 2: Relative path and .js extension
-import { apiRouter } from "./routes/index.js"; // FIX 3: Relative path and .js extension
+import { env } from "./config/env.js";
+import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js";
+import { apiRouter } from "./routes/index.js";
 
-const app = express();
+const app: Application = express();
 
 app.disable("x-powered-by");
 
-app.use(helmet());
+app.use(helmet()); // helmet is fine as a function call
 app.use(
   cors({
     origin: env.CLIENT_ORIGIN,
-    credentials: true
+    credentials: true,
   })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
-app.get("/healthz", (_req, res) => {
+// FIX: Explicitly type _req as Request and res as Response
+app.get("/healthz", (_req: Request, res: Response) => {
   res.json({ status: "healthy" });
 });
 
