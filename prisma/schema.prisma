@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite doesn't support enums, using String with default values
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         String        @default("TEAM_MEMBER")
+  isActive     Boolean       @default(true)
+  avatarUrl    String?
+  title        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  lastLoginAt  DateTime?
+
+  managedProjects Project[]   @relation("ProjectManager")
+  assignments     ProjectAssignment[]
+  tasksAssigned   Task[]      @relation("TaskAssignee")
+  taskUpdates     TaskUpdate[]
+  chatMessages    ChatMessage[]
+  projectUpdates  ProjectUpdate[]
+}
+
+model Project {
+  id              String              @id @default(cuid())
+  name            String
+  code            String              @unique
+  description     String?
+  status          String              @default("PLANNED")
+  startDate       DateTime?
+  targetDate      DateTime?
+  completedDate   DateTime?
+  progress        Int                 @default(0)
+  budget          Float?
+  clientName      String?
+  tags            String              @default("[]")
+  riskLevel       String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  managerId       String?
+  manager         User?               @relation("ProjectManager", fields: [managerId], references: [id])
+
+  assignments     ProjectAssignment[]
+  tasks           Task[]
+  updates         ProjectUpdate[]
+  chatMessages    ChatMessage[]
+}
+
+model ProjectAssignment {
+  id         String   @id @default(cuid())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  role       String
+  billable   Boolean  @default(false)
+  allocation Float    @default(1.0)
+  joinedAt   DateTime @default(now())
+  leftAt     DateTime?
+
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id           String      @id @default(cuid())
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  assignee     User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assigneeId   String?
+  title        String
+  reference    String?     @unique
+  description  String?
+  status       String      @default("NOT_STARTED")
+  priority     String      @default("MEDIUM")
+  startDate    DateTime?
+  dueDate      DateTime?
+  completedAt  DateTime?
+  progress     Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  updates      TaskUpdate[]
+}
+
+model ProjectUpdate {
+  id          String    @id @default(cuid())
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  author      User?     @relation(fields: [authorId], references: [id])
+  authorId    String?
+  summary     String
+  healthScore Int       @default(0)
+  risks       String    @default("[]")
+  blockers    String    @default("[]")
+  createdAt   DateTime  @default(now())
+}
+
+model TaskUpdate {
+  id        String   @id @default(cuid())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  String?
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId  String
+  content   String
+  attachments String?
+  createdAt DateTime @default(now())
+  editedAt  DateTime?
+}
+
+model Configuration {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  scope     String   @default("global")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
