@@ -1,10 +1,13 @@
 import "dotenv/config";
-
 import { z } from "zod";
 
+// Define schema
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.string().default("4000"),
+  PORT: z
+    .string()
+    .optional() // allow Render's dynamic PORT (string)
+    .transform((val) => val ?? process.env.PORT ?? "4000"), // use Render's port if set
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   JWT_EXPIRES_IN: z.string().default("1d"),
@@ -18,5 +21,8 @@ if (!parsed.success) {
   throw new Error("Environment validation failed");
 }
 
-export const env = parsed.data;
-
+// Convert PORT to a number (Render gives a string)
+export const env = {
+  ...parsed.data,
+  PORT: Number(parsed.data.PORT) || 4000
+};
