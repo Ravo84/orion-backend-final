@@ -18,7 +18,7 @@ export const listUsers = async (options: { take?: number; skip?: number } = {}) 
 
   return {
     // FIX 1: Add 'as any' here for type safety
-    data: users.map((user) => toUserResponse(user as any)),
+    data: users.map((user: any) => toUserResponse(user as any)),
     pagination: {
       total,
       skip,
